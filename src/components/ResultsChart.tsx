@@ -40,7 +40,7 @@ export function ResultsChart({ userId, onLoaded, refreshToken }: Props) {
 
       const { data, error: selectError } = userId
         ? await query.eq("user_id", userId)
-        : await query.is("user_id", null);
+        : await query.not("user_id", "is", null);
 
       if (selectError) {
         setError("Не удалось получить данные из Supabase.");
