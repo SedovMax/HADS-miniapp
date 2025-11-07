@@ -12,14 +12,9 @@ type ResultRow = {
   depression_score: number;
 };
 
-type LatestSnapshot = {
-  score: HadScore;
-  submittedAt: string;
-};
-
 type Props = {
   userId?: number;
-  onLoaded?: (snapshot: { latest: LatestSnapshot | null; total: number }) => void;
+  onLoaded?: (latestScore: HadScore | null) => void;
   refreshToken?: number;
 };
 
@@ -45,7 +40,7 @@ export function ResultsChart({ userId, onLoaded, refreshToken }: Props) {
 
       const { data, error: selectError } = userId
         ? await query.eq("user_id", userId)
-        : await query.is("user_id", null);
+        : await query.not("user_id", "is", null);
 
       if (selectError) {
         setError("Не удалось получить данные из Supabase.");
@@ -54,25 +49,15 @@ export function ResultsChart({ userId, onLoaded, refreshToken }: Props) {
         return;
       }
 
-      const safeRows = data ?? [];
-
-      setRows(safeRows);
+      setRows(data ?? []);
       setIsLoading(false);
-
       if (onLoaded) {
-        const latestRow = safeRows[safeRows.length - 1];
-        onLoaded({
-          total: safeRows.length,
-          latest: latestRow
-            ? {
-                score: {
-                  anxiety: latestRow.anxiety_score,
-                  depression: latestRow.depression_score
-                },
-                submittedAt: latestRow.submitted_at
-              }
+        const latest = data?.[data.length - 1] ?? null;
+        onLoaded(
+          latest
+            ? { anxiety: latest.anxiety_score, depression: latest.depression_score }
             : null
-        });
+        );
       }
     }
 
