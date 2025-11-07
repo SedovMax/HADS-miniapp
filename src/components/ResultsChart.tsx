@@ -1,40 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis
-} from "recharts";
+import { Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { supabase } from "@/lib/supabaseClient";
 import type { HadScore } from "@/lib/hads";
 
-export type ResultRow = {
+type ResultRow = {
   id: string;
   submitted_at: string;
   anxiety_score: number;
   depression_score: number;
 };
 
-type LatestSnapshot = {
-  score: HadScore;
-  submittedAt: string;
-};
-
-export type HistorySummary = {
-  latest: LatestSnapshot | null;
-  total: number;
-  rows: ResultRow[];
-};
-
 type Props = {
   userId?: number;
-  onLoaded?: (snapshot: HistorySummary) => void;
+  onLoaded?: (latestScore: HadScore | null) => void;
   refreshToken?: number;
 };
 
@@ -60,7 +40,7 @@ export function ResultsChart({ userId, onLoaded, refreshToken }: Props) {
 
       const { data, error: selectError } = userId
         ? await query.eq("user_id", userId)
-        : await query.is("user_id", null);
+        : await query.not("user_id", "is", null);
 
       if (selectError) {
         setError("Не удалось получить данные из Supabase.");
@@ -69,26 +49,15 @@ export function ResultsChart({ userId, onLoaded, refreshToken }: Props) {
         return;
       }
 
-      const safeRows = data ?? [];
-
-      setRows(safeRows);
+      setRows(data ?? []);
       setIsLoading(false);
-
       if (onLoaded) {
-        const latestRow = safeRows[safeRows.length - 1];
-        onLoaded({
-          total: safeRows.length,
-          rows: safeRows,
-          latest: latestRow
-            ? {
-                score: {
-                  anxiety: latestRow.anxiety_score,
-                  depression: latestRow.depression_score
-                },
-                submittedAt: latestRow.submitted_at
-              }
+        const latest = data?.[data.length - 1] ?? null;
+        onLoaded(
+          latest
+            ? { anxiety: latest.anxiety_score, depression: latest.depression_score }
             : null
-        });
+        );
       }
     }
 
