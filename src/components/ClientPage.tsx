@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import clsx from "clsx";
 import { HadsForm } from "@/components/HadsForm";
 import { ResultsChart } from "@/components/ResultsChart";
 import type { HadScore } from "@/lib/hads";
@@ -57,7 +56,6 @@ export function ClientPage() {
   const user = useTelegramUser();
   const [refreshToken, setRefreshToken] = useState(0);
   const [lastScore, setLastScore] = useState<HadScore | null>(null);
-  const [isHistoryExpanded, setIsHistoryExpanded] = useState(true);
 
   const userName = useMemo(() => {
     if (!user) return "гость";
@@ -65,14 +63,8 @@ export function ClientPage() {
     return [user.first_name, user.last_name].filter(Boolean).join(" ") || "гость";
   }, [user]);
 
-  const handleSaved = useCallback((score: HadScore) => {
+  const handleSaved = useCallback(async () => {
     setRefreshToken((token) => token + 1);
-    setLastScore(score);
-    setIsHistoryExpanded(true);
-  }, []);
-
-  const handleHistoryLoaded = useCallback((score: HadScore | null) => {
-    setLastScore(score);
   }, []);
 
   return (
@@ -91,38 +83,11 @@ export function ClientPage() {
       </header>
 
       <section className="rounded-2xl bg-white px-6 py-5 shadow">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">История результатов</h2>
-            <p className="text-sm text-slate-600">
-              Посмотрите динамику тревожности и депрессии за последние заполнения.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsHistoryExpanded((value) => !value)}
-            className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-800"
-          >
-            {isHistoryExpanded ? "Скрыть график" : "Показать график"}
-          </button>
-        </div>
-
-        <div
-          className={clsx(
-            "mt-5 overflow-hidden transition-all",
-            isHistoryExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
-          )}
-        >
-          {isHistoryExpanded && (
-            <div className="pt-1">
-              <ResultsChart
-                userId={user?.id}
-                refreshToken={refreshToken}
-                onLoaded={handleHistoryLoaded}
-              />
-            </div>
-          )}
-        </div>
+        <ResultsChart
+          userId={user?.id}
+          refreshToken={refreshToken}
+          onLoaded={setLastScore}
+        />
       </section>
 
       <section className="rounded-2xl bg-white px-6 py-5 shadow">
